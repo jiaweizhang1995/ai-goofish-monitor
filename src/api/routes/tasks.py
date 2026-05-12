@@ -20,6 +20,7 @@ from src.services.task_generation_runner import (
     build_task_create,
     run_ai_generation_job,
 )
+from src.multitenant import current_workspace_id
 from src.services.task_payloads import serialize_task, serialize_tasks
 from src.domain.models.task import TaskCreate, TaskUpdate, TaskGenerateRequest
 from src.prompt_utils import generate_criteria
@@ -98,6 +99,9 @@ async def generate_task(
         mode = req.decision_mode or "ai"
         if mode == "ai":
             job = await generation_service.create_job(req.task_name)
+            # Capture workspace at HTTP boundary — generation runs in a detached
+            # thread + fresh asyncio loop, ContextVar isn't auto-propagated.
+            ws_id = current_workspace_id()
             generation_service.track(
                 run_ai_generation_job(
                     job_id=job.job_id,
@@ -105,6 +109,7 @@ async def generate_task(
                     task_service=service,
                     scheduler_service=scheduler_service,
                     generation_service=generation_service,
+                    workspace_id=ws_id,
                 )
             )
             return JSONResponse(

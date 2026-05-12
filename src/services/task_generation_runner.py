@@ -10,6 +10,7 @@ from src.prompt_utils import generate_criteria
 from src.services.scheduler_service import SchedulerService
 from src.services.task_generation_service import TaskGenerationService
 from src.services.task_service import TaskService
+from src.multitenant import _current_workspace_id
 
 def build_criteria_filename(keyword: str) -> str:
     safe_keyword = "".join(
@@ -76,7 +77,13 @@ async def run_ai_generation_job(
     task_service: TaskService,
     scheduler_service: SchedulerService,
     generation_service: TaskGenerationService,
+    workspace_id: int | None = None,
 ) -> None:
+    # AI generation 在独立线程 + asyncio.run 跑, ContextVar 默认空。
+    # HTTP handler 把当前 workspace_id 传过来, 这里手工 set 一遍, 让深层
+    # task_service.create_task → sqlite_task_repository._save_sync 能读到。
+    if workspace_id is not None:
+        _current_workspace_id.set(workspace_id)
     output_filename = build_criteria_filename(req.keyword)
     try:
         await advance_job(
