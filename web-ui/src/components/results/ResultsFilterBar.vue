@@ -8,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
 import { RefreshCcw, ListFilter, Download, Trash2, ChevronsUpDown, EyeOff } from 'lucide-vue-next'
 
 interface FileOption {
