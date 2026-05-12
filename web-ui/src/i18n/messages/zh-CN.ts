@@ -210,6 +210,10 @@ const zhCN = {
       medianPrice: '中位数',
       noTrend: '暂无可绘制的趋势数据',
     },
+    controls: {
+      expandAllAi: '全部展开',
+      collapseAllAi: '全部收起',
+    },
     card: {
       curated: '优选',
       strongRecommend: '强烈推荐',

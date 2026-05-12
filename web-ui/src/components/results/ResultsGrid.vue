@@ -6,9 +6,10 @@ import ResultCard from './ResultCard.vue'
 interface Props {
   results: ResultItem[]
   isLoading: boolean
+  expandAll?: boolean
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), { expandAll: true })
 const { t } = useI18n()
 
 const emit = defineEmits<{
@@ -48,6 +49,7 @@ const skeletonItems = Array.from({ length: 12 }, (_, index) => index)
         v-for="item in results"
         :key="item.商品信息.商品ID"
         :item="item"
+        :expand-all="expandAll"
         @toggle-block="emit('toggle-block', $event)"
       />
     </div>

@@ -210,6 +210,10 @@ const enUS = {
       medianPrice: 'Median',
       noTrend: 'No trend data to render yet',
     },
+    controls: {
+      expandAllAi: 'Expand all',
+      collapseAllAi: 'Collapse all',
+    },
     card: {
       curated: 'Curated',
       strongRecommend: 'Strong Buy',

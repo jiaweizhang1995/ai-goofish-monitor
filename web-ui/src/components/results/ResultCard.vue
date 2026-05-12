@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ResultItem } from '@/types/result.d.ts'
 import { ExternalLink, ChevronDown, ChevronUp, EyeOff, Eye, TrendingUp, TrendingDown, Sparkles } from 'lucide-vue-next'
@@ -7,9 +7,10 @@ import { formatDateTime } from '@/i18n'
 
 interface Props {
   item: ResultItem
+  expandAll?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { expandAll: true })
 const emit = defineEmits<{
   (e: 'toggle-block', item: ResultItem): void
 }>()
@@ -55,7 +56,9 @@ const sellerName = computed(() =>
   (seller?.卖家昵称 || info.卖家昵称 || t('results.card.anonymous')) as string
 )
 
-const expanded = ref(false)
+// 默认展开 (AI 分析是核心信号, 直接看). 受父级 expand-all 同步切换。
+const expanded = ref(props.expandAll)
+watch(() => props.expandAll, (v) => { expanded.value = v })
 const hasReason = computed(() => Boolean(ai?.reason && ai.reason.trim().length > 0))
 const priceDiff = computed(() => {
   const own = Number(String(info.当前售价).replace(/[^\d.]/g, '')) || 0

@@ -8,6 +8,7 @@ import ResultsInsightsPanel from '@/components/results/ResultsInsightsPanel.vue'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
+import { ChevronsDownUp, ChevronsUpDown } from 'lucide-vue-next'
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,12 @@ const {
 const isDeleteDialogOpen = ref(false)
 const isBlacklistDialogOpen = ref(false)
 const blacklistDraft = ref('')
+
+// 全局 AI 分析展开/收起 切换 (默认展开)
+const expandAllAi = ref(true)
+function toggleExpandAll() {
+  expandAllAi.value = !expandAllAi.value
+}
 
 const selectedTaskLabel = computed(() => {
   if (!selectedFile.value || fileOptions.value.length === 0) return null
@@ -141,6 +148,16 @@ async function handleSaveBlacklistRules() {
           :selected-task-label="selectedTaskLabel"
           :recommended-count="recommendedCount"
         />
+        <button
+          type="button"
+          class="ml-1 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-slate-200 text-slate-600 hover:border-slate-900 hover:text-slate-900 text-[11px] font-bold tracking-wide transition-colors"
+          :title="expandAllAi ? t('results.controls.collapseAllAi') : t('results.controls.expandAllAi')"
+          @click="toggleExpandAll"
+        >
+          <ChevronsDownUp v-if="expandAllAi" class="w-3.5 h-3.5" />
+          <ChevronsUpDown v-else class="w-3.5 h-3.5" />
+          {{ expandAllAi ? t('results.controls.collapseAllAi') : t('results.controls.expandAllAi') }}
+        </button>
         <div class="h-6 w-px bg-slate-200"></div>
         <div class="flex-1 min-w-0">
           <ResultsFilterBar
@@ -168,7 +185,7 @@ async function handleSaveBlacklistRules() {
       <span class="block sm:inline">{{ error.message }}</span>
     </div>
 
-    <ResultsGrid :results="results" :is-loading="isLoading" @toggle-block="toggleItemBlock" />
+    <ResultsGrid :results="results" :is-loading="isLoading" :expand-all="expandAllAi" @toggle-block="toggleItemBlock" />
 
     <Dialog v-model:open="isDeleteDialogOpen">
       <DialogContent class="sm:max-w-[420px]">
