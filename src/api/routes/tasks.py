@@ -3,6 +3,7 @@
 """
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from typing import List
 import os
 import aiofiles
@@ -184,11 +185,17 @@ async def update_task(
                 )
                 if not str(description_for_ai or "").strip():
                     raise HTTPException(status_code=400, detail="AI 模式下详细需求不能为空。")
+                # workspace-scoped criteria path (multi-tenant); fall back to
+                # legacy unscoped name when context is missing (e.g. CLI/tests).
+                ws_id = current_workspace_id()
                 safe_keyword = "".join(
                     c for c in existing_task.keyword.lower().replace(' ', '_')
                     if c.isalnum() or c in "_-"
                 ).rstrip()
-                output_filename = f"prompts/{safe_keyword}_criteria.txt"
+                if ws_id is not None:
+                    output_filename = f"prompts/ws{ws_id}__{safe_keyword}_criteria.txt"
+                else:
+                    output_filename = f"prompts/{safe_keyword}_criteria.txt"
                 print(f"目标文件路径: {output_filename}")
                 print("开始调用 AI 生成新的分析标准...")
                 generated_criteria = await generate_criteria(
@@ -286,3 +293,65 @@ async def stop_task(
         raise HTTPException(status_code=404, detail="任务未找到")
     await process_service.stop_task(task_id)
     return {"message": f"任务ID {task_id} 已发送停止信号"}
+
+
+# ---------------------------------------------------------------------------
+# Criteria 文件 (AI 分析标准) — task 维度读写, 自动走 workspace 隔离。
+# 文件实际路径在 task.ai_prompt_criteria_file (e.g. prompts/ws3__macbook_criteria.txt)
+# Spider 每次 run 都重读此文件 → 编辑后下次运行立即生效, 无需重启容器。
+# ---------------------------------------------------------------------------
+
+class CriteriaUpdate(BaseModel):
+    content: str
+
+
+def _resolve_criteria_path(task) -> str:
+    """从 task 拿 criteria 路径并做安全校验。"""
+    rel = (task.ai_prompt_criteria_file or "").strip()
+    if not rel:
+        raise HTTPException(status_code=404, detail="该任务无 AI 分析标准文件 (非 AI 模式或未生成)")
+    # 锁死在 prompts/ 内 (防 path traversal 越权读项目根目录)
+    abs_path = os.path.normpath(rel)
+    if abs_path.startswith("..") or abs_path.startswith("/"):
+        raise HTTPException(status_code=400, detail="criteria 路径非法")
+    if not abs_path.startswith("prompts" + os.sep) and abs_path != "prompts":
+        raise HTTPException(status_code=400, detail="criteria 路径必须在 prompts/ 下")
+    return abs_path
+
+
+@router.get("/{task_id}/criteria", response_model=dict)
+async def get_task_criteria(
+    task_id: int,
+    service: TaskService = Depends(get_task_service),
+):
+    """读 task 关联的 AI 分析标准全文。"""
+    task = await service.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="任务未找到")
+    path = _resolve_criteria_path(task)
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail=f"标准文件不存在: {path}")
+    async with aiofiles.open(path, "r", encoding="utf-8") as f:
+        content = await f.read()
+    return {"task_id": task_id, "path": path, "content": content}
+
+
+@router.put("/{task_id}/criteria", response_model=dict)
+async def update_task_criteria(
+    task_id: int,
+    payload: CriteriaUpdate,
+    service: TaskService = Depends(get_task_service),
+):
+    """覆写 task 关联的 AI 分析标准全文。下次任务运行时 spider 自动重读。"""
+    task = await service.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="任务未找到")
+    path = _resolve_criteria_path(task)
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail=f"标准文件不存在: {path}")
+    try:
+        async with aiofiles.open(path, "w", encoding="utf-8") as f:
+            await f.write(payload.content)
+        return {"message": "AI 标准已保存, 下次任务运行立即生效", "bytes": len(payload.content.encode("utf-8"))}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"写入失败: {exc}")

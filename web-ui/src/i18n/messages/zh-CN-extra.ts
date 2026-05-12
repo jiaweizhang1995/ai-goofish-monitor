@@ -18,7 +18,7 @@ const zhCNExtra = {
     },
     createDialog: { trigger: '+ 创建新任务', title: '创建新监控任务（AI 或关键词）', submit: '创建任务', submitting: '提交中...' },
     editDialog: { title: '编辑任务: {task}', save: '保存更改' },
-    criteria: { title: '重新生成 AI 标准', description: '修改详细需求后将重新生成 AI 分析标准。', descriptionRequired: '请填写新的详细需求。', action: '重新生成', generating: '生成中...' },
+    criteria: { title: '重新生成 AI 标准', description: '修改详细需求后将重新生成 AI 分析标准。', descriptionRequired: '请填写新的详细需求。', action: '重新生成', generating: '生成中...', viewLabel: '查看/编辑', editTitle: '编辑 AI 分析标准', editDescription: '直接修改这份 AI 分析标准的全文。保存后, 任务下次运行时立即生效, 无需重启容器。', saveLabel: '保存', saveSuccess: 'AI 标准已保存, 下次运行生效', saveError: '保存失败', loadError: '加载失败' },
     deleteDialog: { title: '删除任务', descriptionWithTask: '确定删除任务「{task}」吗？此操作不可恢复。', descriptionFallback: '确定删除该任务吗？此操作不可恢复。', confirm: '确认删除' },
     generation: {
       title: '任务生成进度',

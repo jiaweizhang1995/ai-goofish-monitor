@@ -13,19 +13,20 @@ import {
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Play, 
-  Square, 
-  Pencil, 
-  Trash2, 
-  User, 
-  BrainCircuit, 
+import {
+  Play,
+  Square,
+  Pencil,
+  Trash2,
+  User,
+  BrainCircuit,
   Keyboard,
   Clock,
   Layers,
   MapPin,
   RefreshCcw,
-  Search
+  Search,
+  FileText
 } from 'lucide-vue-next'
 import { formatCountdown, formatNextRunAbsolute } from '@/lib/taskSchedule'
 
@@ -90,6 +91,7 @@ const emit = defineEmits<{
   (e: 'stop-task', taskId: number): void
   (e: 'edit-task', task: Task): void
   (e: 'refresh-criteria', task: Task): void
+  (e: 'edit-criteria', task: Task): void
   (e: 'toggle-enabled', task: Task, enabled: boolean): void
 }>()
 </script>
@@ -230,6 +232,16 @@ const emit = defineEmits<{
                   >
                     <RefreshCcw class="mr-1 h-3.5 w-3.5" />
                     {{ t('tasks.table.refreshCriteria') }}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    class="text-emerald-700 hover:bg-emerald-50"
+                    :aria-label="`${t('tasks.criteria.viewLabel')} ${task.task_name}`"
+                    @click="emit('edit-criteria', task)"
+                  >
+                    <FileText class="mr-1 h-3.5 w-3.5" />
+                    {{ t('tasks.criteria.viewLabel') }}
                   </Button>
                 </div>
               </div>
@@ -415,15 +427,25 @@ const emit = defineEmits<{
                   >
                     {{ (task.ai_prompt_criteria_file || 'STANDARD').split('/').pop() }}
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    class="h-6 text-[9px] font-black text-emerald-600 hover:bg-emerald-50 uppercase tracking-widest px-2" 
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    class="h-6 text-[9px] font-black text-emerald-600 hover:bg-emerald-50 uppercase tracking-widest px-2"
                     :aria-label="`${t('tasks.table.refreshCriteria')} ${task.task_name}`"
                     :title="`${t('tasks.table.refreshCriteria')} ${task.task_name}`"
                     @click="emit('refresh-criteria', task)"
                   >
                     <RefreshCcw class="w-2.5 h-2.5 mr-1" /> {{ t('tasks.table.refreshCriteria') }}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    class="h-6 text-[9px] font-black text-emerald-600 hover:bg-emerald-50 uppercase tracking-widest px-2"
+                    :aria-label="`${t('tasks.criteria.viewLabel')} ${task.task_name}`"
+                    :title="`${t('tasks.criteria.viewLabel')} ${task.task_name}`"
+                    @click="emit('edit-criteria', task)"
+                  >
+                    <FileText class="w-2.5 h-2.5 mr-1" /> {{ t('tasks.criteria.viewLabel') }}
                   </Button>
                 </div>
               </div>

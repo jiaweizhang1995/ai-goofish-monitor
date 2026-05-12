@@ -135,6 +135,34 @@ def strip_workspace_prefix(filename: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Prompts (criteria .txt) — same scoping pattern, .txt suffix.
+# Two upstream files are *shared* templates; never workspace-prefix them.
+# ---------------------------------------------------------------------------
+
+SHARED_PROMPT_FILES = frozenset({
+    "base_prompt.txt",
+    "macbook_criteria.txt",
+})
+
+
+def scoped_prompt_filename(workspace_id: int, raw_name: str) -> str:
+    return f"ws{workspace_id}__{raw_name}.txt"
+
+
+def is_prompt_in_workspace(workspace_id: int, filename: str) -> bool:
+    return filename.startswith(f"ws{workspace_id}__") and filename.endswith(".txt")
+
+
+def strip_prompt_workspace_prefix(filename: str) -> str:
+    base = filename[:-4] if filename.endswith(".txt") else filename
+    if "__" in base:
+        prefix, _, rest = base.partition("__")
+        if prefix.startswith("ws") and prefix[2:].isdigit():
+            return rest
+    return base
+
+
+# ---------------------------------------------------------------------------
 # FastAPI middleware
 # ---------------------------------------------------------------------------
 

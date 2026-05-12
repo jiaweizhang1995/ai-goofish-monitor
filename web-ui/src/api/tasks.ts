@@ -48,3 +48,21 @@ export async function stopTask(taskId: number): Promise<void> {
 export async function deleteTask(taskId: number): Promise<void> {
   await http(`/api/tasks/${taskId}`, { method: 'DELETE' })
 }
+
+export interface TaskCriteria {
+  task_id: number
+  path: string
+  content: string
+}
+
+export async function getTaskCriteria(taskId: number): Promise<TaskCriteria> {
+  return await http(`/api/tasks/${taskId}/criteria`)
+}
+
+export async function updateTaskCriteria(taskId: number, content: string): Promise<{ message: string; bytes: number }> {
+  return await http(`/api/tasks/${taskId}/criteria`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  })
+}

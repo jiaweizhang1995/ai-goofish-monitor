@@ -12,11 +12,13 @@ from src.services.task_generation_service import TaskGenerationService
 from src.services.task_service import TaskService
 from src.multitenant import _current_workspace_id
 
-def build_criteria_filename(keyword: str) -> str:
+def build_criteria_filename(keyword: str, workspace_id: int | None = None) -> str:
     safe_keyword = "".join(
         char for char in keyword.lower().replace(" ", "_")
         if char.isalnum() or char in "_-"
     ).rstrip()
+    if workspace_id is not None:
+        return f"prompts/ws{workspace_id}__{safe_keyword}_criteria.txt"
     return f"prompts/{safe_keyword}_criteria.txt"
 
 
@@ -85,7 +87,7 @@ async def run_ai_generation_job(
     # task_service.create_task → sqlite_task_repository._save_sync 能读到。
     if workspace_id is not None:
         _current_workspace_id.set(workspace_id)
-    output_filename = build_criteria_filename(req.keyword)
+    output_filename = build_criteria_filename(req.keyword, workspace_id)
     try:
         await advance_job(
             generation_service,

@@ -9,6 +9,7 @@ import TaskCreateDialog from '@/components/tasks/TaskCreateDialog.vue'
 import TasksTable from '@/components/tasks/TasksTable.vue'
 import TaskForm from '@/components/tasks/TaskForm.vue'
 import { listAccounts, type AccountItem } from '@/api/accounts'
+import { getTaskCriteria, updateTaskCriteria } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
@@ -46,6 +47,14 @@ const isCriteriaSubmitting = ref(false)
 const isDeleteDialogOpen = ref(false)
 const taskToDeleteId = ref<number | null>(null)
 const accountOptions = ref<AccountItem[]>([])
+
+// Criteria 文件直接编辑 (区别于 AI 重新生成)
+const isCriteriaEditDialogOpen = ref(false)
+const criteriaEditTask = ref<Task | null>(null)
+const criteriaEditContent = ref('')
+const criteriaEditPath = ref('')
+const isCriteriaLoading = ref(false)
+const isCriteriaEditSaving = ref(false)
 
 const taskToDelete = computed(() => {
   if (taskToDeleteId.value === null) return null
@@ -145,6 +154,46 @@ async function handleRefreshCriteria() {
     })
   } finally {
     isCriteriaSubmitting.value = false
+  }
+}
+
+async function handleOpenCriteriaEditDialog(task: Task) {
+  criteriaEditTask.value = task
+  criteriaEditContent.value = ''
+  criteriaEditPath.value = ''
+  isCriteriaEditDialogOpen.value = true
+  isCriteriaLoading.value = true
+  try {
+    const data = await getTaskCriteria(task.id)
+    criteriaEditContent.value = data.content
+    criteriaEditPath.value = data.path
+  } catch (e) {
+    toast({
+      title: t('tasks.criteria.loadError'),
+      description: (e as Error).message,
+      variant: 'destructive',
+    })
+    isCriteriaEditDialogOpen.value = false
+  } finally {
+    isCriteriaLoading.value = false
+  }
+}
+
+async function handleSaveCriteriaEdit() {
+  if (!criteriaEditTask.value) return
+  isCriteriaEditSaving.value = true
+  try {
+    await updateTaskCriteria(criteriaEditTask.value.id, criteriaEditContent.value)
+    toast({ title: t('tasks.criteria.saveSuccess') })
+    isCriteriaEditDialogOpen.value = false
+  } catch (e) {
+    toast({
+      title: t('tasks.criteria.saveError'),
+      description: (e as Error).message,
+      variant: 'destructive',
+    })
+  } finally {
+    isCriteriaEditSaving.value = false
   }
 }
 
@@ -275,8 +324,44 @@ onMounted(fetchAccountOptions)
       @run-task="handleStartTask"
       @stop-task="handleStopTask"
       @refresh-criteria="handleOpenCriteriaDialog"
+      @edit-criteria="handleOpenCriteriaEditDialog"
       @toggle-enabled="handleToggleEnabled"
     />
+
+    <!-- Edit Criteria File Dialog (直接编辑 criteria 文件全文) -->
+    <Dialog v-model:open="isCriteriaEditDialogOpen">
+      <DialogContent class="sm:max-w-[900px] max-h-[90vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle>
+            {{ t('tasks.criteria.editTitle') }}
+            <span v-if="criteriaEditTask" class="text-sm text-gray-500 font-normal ml-2">— {{ criteriaEditTask.task_name }}</span>
+          </DialogTitle>
+          <DialogDescription>
+            {{ t('tasks.criteria.editDescription') }}
+            <span v-if="criteriaEditPath" class="block mt-1 font-mono text-xs text-gray-400">{{ criteriaEditPath }}</span>
+          </DialogDescription>
+        </DialogHeader>
+        <div class="flex-1 min-h-0 overflow-hidden">
+          <div v-if="isCriteriaLoading" class="text-sm text-gray-500 py-8 text-center">
+            {{ t('common.loading') }}
+          </div>
+          <Textarea
+            v-else
+            v-model="criteriaEditContent"
+            class="font-mono text-xs leading-relaxed min-h-[60vh] resize-none"
+            spellcheck="false"
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" @click="isCriteriaEditDialogOpen = false">
+            {{ t('common.cancel') }}
+          </Button>
+          <Button :disabled="isCriteriaEditSaving || isCriteriaLoading" @click="handleSaveCriteriaEdit">
+            {{ isCriteriaEditSaving ? t('common.saving') : t('tasks.criteria.saveLabel') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <Dialog v-model:open="isDeleteDialogOpen">
       <DialogContent class="sm:max-w-[420px]">

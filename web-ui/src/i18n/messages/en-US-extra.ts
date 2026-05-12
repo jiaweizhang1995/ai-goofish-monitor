@@ -18,7 +18,7 @@ const enUSExtra = {
     },
     createDialog: { trigger: '+ New Task', title: 'Create Monitoring Task (AI or Keyword)', submit: 'Create Task', submitting: 'Submitting...' },
     editDialog: { title: 'Edit Task: {task}', save: 'Save Changes' },
-    criteria: { title: 'Regenerate AI Criteria', description: 'Update the detailed requirement to regenerate AI analysis criteria.', descriptionRequired: 'Please provide a new detailed requirement.', action: 'Regenerate', generating: 'Generating...' },
+    criteria: { title: 'Regenerate AI Criteria', description: 'Update the detailed requirement to regenerate AI analysis criteria.', descriptionRequired: 'Please provide a new detailed requirement.', action: 'Regenerate', generating: 'Generating...', viewLabel: 'View/Edit', editTitle: 'Edit AI Criteria', editDescription: 'Edit the full AI analysis criteria text directly. Saved changes take effect on the next task run — no container restart needed.', saveLabel: 'Save', saveSuccess: 'AI criteria saved, takes effect on next run', saveError: 'Save failed', loadError: 'Load failed' },
     deleteDialog: { title: 'Delete Task', descriptionWithTask: 'Delete task "{task}"? This action cannot be undone.', descriptionFallback: 'Delete this task? This action cannot be undone.', confirm: 'Delete' },
     generation: {
       title: 'Task Generation Progress',
