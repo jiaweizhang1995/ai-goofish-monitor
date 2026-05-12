@@ -72,10 +72,10 @@ async def lifespan(app: FastAPI):
     multitenant.ensure_workspace_schema()
     cleanup_task_logs(keep_days=app_settings.task_log_retention_days)
 
-    # 重置所有任务状态为停止
+    # 重置所有任务状态为停止 (lifespan 无 HTTP 上下文, 用全局视图)
     task_repo = SqliteTaskRepository()
     task_service = TaskService(task_repo)
-    tasks_list = await task_service.get_all_tasks()
+    tasks_list = await task_service.get_all_tasks_unscoped()
 
     for task in tasks_list:
         if task.is_running:

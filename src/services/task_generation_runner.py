@@ -57,7 +57,8 @@ async def reload_scheduler(
     task_service: TaskService,
     scheduler_service: SchedulerService,
 ) -> None:
-    tasks = await task_service.get_all_tasks()
+    # 同 tasks.py 里的 _reload_scheduler_if_needed — 跨 workspace 全局视图。
+    tasks = await task_service.get_all_tasks_unscoped()
     await scheduler_service.reload_jobs(tasks)
 
 

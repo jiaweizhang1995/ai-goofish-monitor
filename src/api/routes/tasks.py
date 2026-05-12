@@ -35,7 +35,9 @@ async def _reload_scheduler_if_needed(
     task_service: TaskService,
     scheduler_service: SchedulerService,
 ):
-    tasks = await task_service.get_all_tasks()
+    # Scheduler 是进程级单例 — 每次 reload 必须给它 ALL workspace 的任务,
+    # 否则 user A 建任务就把 user B 的 cron 全清掉了。
+    tasks = await task_service.get_all_tasks_unscoped()
     await scheduler_service.reload_jobs(tasks)
 
 

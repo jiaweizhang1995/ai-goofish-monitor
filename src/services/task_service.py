@@ -14,7 +14,13 @@ class TaskService:
         self.repository = repository
 
     async def get_all_tasks(self) -> List[Task]:
-        """获取所有任务"""
+        """获取所有任务 (按当前 workspace 过滤)"""
+        return await self.repository.find_all()
+
+    async def get_all_tasks_unscoped(self) -> List[Task]:
+        """跨 workspace 全局视图 — 调度器/spider CLI 用。"""
+        if hasattr(self.repository, "find_all_unscoped"):
+            return await self.repository.find_all_unscoped()
         return await self.repository.find_all()
 
     async def get_task(self, task_id: int) -> Optional[Task]:

@@ -49,6 +49,19 @@ class SqliteTaskRepository(TaskRepository):
     async def find_all(self) -> List[Task]:
         return await asyncio.to_thread(self._find_all_sync)
 
+    async def find_all_unscoped(self) -> List[Task]:
+        """Workspace-blind read — scheduler reload + spider CLI use this."""
+        return await asyncio.to_thread(self._find_all_unscoped_sync)
+
+    def _find_all_unscoped_sync(self) -> List[Task]:
+        bootstrap_sqlite_storage(
+            self.db_path,
+            legacy_config_file=self.legacy_config_file,
+        )
+        with sqlite_connection(self.db_path) as conn:
+            rows = conn.execute("SELECT * FROM tasks ORDER BY id ASC").fetchall()
+        return [_row_to_task(row) for row in rows]
+
     async def find_by_id(self, task_id: int) -> Optional[Task]:
         return await asyncio.to_thread(self._find_by_id_sync, task_id)
 
