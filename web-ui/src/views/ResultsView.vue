@@ -49,6 +49,10 @@ const selectedTaskLabel = computed(() => {
   return match.taskName || null
 })
 
+const recommendedCount = computed(() => {
+  return (results.value || []).filter((item) => item?.ai_analysis?.is_recommended === true).length
+})
+
 const deleteConfirmText = computed(() => {
   return selectedTaskLabel.value
     ? t('results.filters.deleteDialogWithTask', { task: selectedTaskLabel.value })
@@ -129,33 +133,40 @@ async function handleSaveBlacklistRules() {
 
 <template>
   <div>
-    <h1 class="text-2xl font-bold text-gray-800 mb-6">
-      {{ t('results.title') }}
-    </h1>
+    <!-- Sticky header: 3 KPI + filter bar combined (~56px) -->
+    <header class="sticky top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 mb-4 bg-white/85 backdrop-blur border-b border-slate-200">
+      <div class="flex items-center gap-4 flex-wrap h-14">
+        <ResultsInsightsPanel
+          :insights="insights"
+          :selected-task-label="selectedTaskLabel"
+          :recommended-count="recommendedCount"
+        />
+        <div class="h-6 w-px bg-slate-200"></div>
+        <div class="flex-1 min-w-0">
+          <ResultsFilterBar
+            :files="files"
+            :file-options="fileOptions"
+            :is-ready="isFileOptionsReady"
+            v-model:selectedFile="selectedFile"
+            v-model:aiRecommendedOnly="filters.ai_recommended_only"
+            v-model:keywordRecommendedOnly="filters.keyword_recommended_only"
+            v-model:includeHidden="filters.include_hidden"
+            v-model:sortBy="filters.sort_by"
+            v-model:sortOrder="filters.sort_order"
+            :is-loading="isLoading"
+            @refresh="refreshResults"
+            @manage-blacklist="openBlacklistDialog"
+            @export="handleExportResults"
+            @delete="openDeleteDialog"
+          />
+        </div>
+      </div>
+    </header>
 
     <div v-if="error" class="app-alert-error mb-4" role="alert">
       <strong class="font-bold">{{ t('common.error') }}</strong>
       <span class="block sm:inline">{{ error.message }}</span>
     </div>
-
-    <ResultsFilterBar
-      :files="files"
-      :file-options="fileOptions"
-      :is-ready="isFileOptionsReady"
-      v-model:selectedFile="selectedFile"
-      v-model:aiRecommendedOnly="filters.ai_recommended_only"
-      v-model:keywordRecommendedOnly="filters.keyword_recommended_only"
-      v-model:includeHidden="filters.include_hidden"
-      v-model:sortBy="filters.sort_by"
-      v-model:sortOrder="filters.sort_order"
-      :is-loading="isLoading"
-      @refresh="refreshResults"
-      @manage-blacklist="openBlacklistDialog"
-      @export="handleExportResults"
-      @delete="openDeleteDialog"
-    />
-
-    <ResultsInsightsPanel :insights="insights" :selected-task-label="selectedTaskLabel" />
 
     <ResultsGrid :results="results" :is-loading="isLoading" @toggle-block="toggleItemBlock" />
 
