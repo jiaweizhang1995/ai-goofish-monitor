@@ -11,6 +11,7 @@ from src.domain.models.task import Task
 from src.domain.repositories.task_repository import TaskRepository
 from src.infrastructure.persistence.sqlite_bootstrap import bootstrap_sqlite_storage
 from src.infrastructure.persistence.sqlite_connection import sqlite_connection
+from src.multitenant import current_workspace_id
 
 
 def _row_to_task(row) -> Task:
@@ -62,8 +63,17 @@ class SqliteTaskRepository(TaskRepository):
             self.db_path,
             legacy_config_file=self.legacy_config_file,
         )
+        ws = current_workspace_id()
         with sqlite_connection(self.db_path) as conn:
-            rows = conn.execute("SELECT * FROM tasks ORDER BY id ASC").fetchall()
+            if ws is None:
+                # Spider / CLI context (no HTTP request) — see all tasks. Scheduler
+                # at app start also needs the global view to rebuild jobs.
+                rows = conn.execute("SELECT * FROM tasks ORDER BY id ASC").fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM tasks WHERE workspace_id = ? ORDER BY id ASC",
+                    (ws,),
+                ).fetchall()
         return [_row_to_task(row) for row in rows]
 
     def _find_by_id_sync(self, task_id: int) -> Optional[Task]:
@@ -71,8 +81,18 @@ class SqliteTaskRepository(TaskRepository):
             self.db_path,
             legacy_config_file=self.legacy_config_file,
         )
+        ws = current_workspace_id()
         with sqlite_connection(self.db_path) as conn:
-            row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+            if ws is None:
+                row = conn.execute(
+                    "SELECT * FROM tasks WHERE id = ?",
+                    (task_id,),
+                ).fetchone()
+            else:
+                row = conn.execute(
+                    "SELECT * FROM tasks WHERE id = ? AND workspace_id = ?",
+                    (task_id, ws),
+                ).fetchone()
         return _row_to_task(row) if row else None
 
     def _save_sync(self, task: Task) -> Task:
@@ -80,11 +100,21 @@ class SqliteTaskRepository(TaskRepository):
             self.db_path,
             legacy_config_file=self.legacy_config_file,
         )
+        ws = current_workspace_id()
         with sqlite_connection(self.db_path) as conn:
             task_id = task.id
             if task_id is None:
                 task_id = self._next_task_id(conn)
             payload = self._task_values(task.model_copy(update={"id": task_id}))
+            # Inject workspace_id — preserves existing on UPDATE, stamps on INSERT.
+            if ws is not None:
+                payload["workspace_id"] = ws
+            else:
+                existing = conn.execute(
+                    "SELECT workspace_id FROM tasks WHERE id = ?",
+                    (task_id,),
+                ).fetchone()
+                payload["workspace_id"] = existing[0] if existing else None
             conn.execute(
                 """
                 INSERT OR REPLACE INTO tasks (
@@ -92,13 +122,13 @@ class SqliteTaskRepository(TaskRepository):
                     max_pages, personal_only, min_price, max_price, cron,
                     ai_prompt_base_file, ai_prompt_criteria_file, account_state_file,
                     account_strategy, free_shipping, new_publish_option, region,
-                    decision_mode, keyword_rules_json, is_running
+                    decision_mode, keyword_rules_json, is_running, workspace_id
                 ) VALUES (
                     :id, :task_name, :enabled, :keyword, :description, :analyze_images,
                     :max_pages, :personal_only, :min_price, :max_price, :cron,
                     :ai_prompt_base_file, :ai_prompt_criteria_file, :account_state_file,
                     :account_strategy, :free_shipping, :new_publish_option, :region,
-                    :decision_mode, :keyword_rules_json, :is_running
+                    :decision_mode, :keyword_rules_json, :is_running, :workspace_id
                 )
                 """,
                 payload,
@@ -111,8 +141,15 @@ class SqliteTaskRepository(TaskRepository):
             self.db_path,
             legacy_config_file=self.legacy_config_file,
         )
+        ws = current_workspace_id()
         with sqlite_connection(self.db_path) as conn:
-            cursor = conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+            if ws is None:
+                cursor = conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+            else:
+                cursor = conn.execute(
+                    "DELETE FROM tasks WHERE id = ? AND workspace_id = ?",
+                    (task_id, ws),
+                )
             conn.commit()
         return cursor.rowcount > 0
 

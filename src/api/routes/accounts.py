@@ -9,11 +9,25 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List
 from src.infrastructure.config.env_manager import env_manager
+from src.multitenant import (
+    current_workspace_id,
+    scoped_account_filename,
+    is_filename_in_workspace,
+    strip_workspace_prefix,
+)
 
 
 router = APIRouter(prefix="/api/accounts", tags=["accounts"])
 
 ACCOUNT_NAME_RE = re.compile(r"^[a-zA-Z0-9_-]{1,50}$")
+
+
+def _require_workspace() -> int:
+    ws = current_workspace_id()
+    if ws is None:
+        # 中间件应已拦住, 兜底防御。
+        raise HTTPException(status_code=401, detail="工作区未识别")
+    return ws
 
 
 class AccountCreate(BaseModel):
@@ -50,7 +64,8 @@ def _validate_name(name: str) -> str:
 
 
 def _account_path(name: str) -> str:
-    filename = f"{name}.json"
+    ws = _require_workspace()
+    filename = scoped_account_filename(ws, name)
     return os.path.join(_state_dir(), filename)
 
 
@@ -63,15 +78,15 @@ def _validate_json(content: str) -> None:
 
 @router.get("", response_model=List[dict])
 async def list_accounts():
+    ws = _require_workspace()
     state_dir = _state_dir()
     if not os.path.isdir(state_dir):
         return []
-    files = [f for f in os.listdir(state_dir) if f.endswith(".json")]
+    files = [f for f in os.listdir(state_dir) if is_filename_in_workspace(ws, f)]
     accounts = []
     for filename in sorted(files):
-        name = filename[:-5]
         accounts.append({
-            "name": name,
+            "name": strip_workspace_prefix(filename),
             "path": os.path.join(state_dir, filename),
         })
     return accounts

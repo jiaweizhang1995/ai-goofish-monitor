@@ -31,6 +31,7 @@ from src.services.task_generation_service import TaskGenerationService
 from src.infrastructure.persistence.sqlite_bootstrap import bootstrap_sqlite_storage
 from src.infrastructure.persistence.sqlite_task_repository import SqliteTaskRepository
 from src.infrastructure.config.settings import settings as app_settings
+from src import multitenant
 
 
 # 全局服务实例
@@ -68,6 +69,7 @@ async def lifespan(app: FastAPI):
     # 启动时
     print("正在启动应用...")
     bootstrap_sqlite_storage()
+    multitenant.ensure_workspace_schema()
     cleanup_task_logs(keep_days=app_settings.task_log_retention_days)
 
     # 重置所有任务状态为停止
@@ -101,6 +103,12 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan
 )
+
+# 多租户中间件 — 必须在路由之前注册, FastAPI 中间件顺序: 后注册 = 先执行
+app.middleware("http")(multitenant.workspace_middleware)
+
+# 多租户工作区路由
+multitenant.register_routes(app)
 
 # 注册路由
 app.include_router(tasks.router)
@@ -143,10 +151,15 @@ class LoginRequest(BaseModel):
 
 @app.post("/auth/status")
 async def auth_status(payload: LoginRequest):
-    """检查认证状态"""
-    if payload.username == app_settings.web_username and payload.password == app_settings.web_password:
-        return {"authenticated": True, "username": payload.username}
-    raise HTTPException(status_code=401, detail="认证失败")
+    """
+    工作区登录占位端点。
+
+    每个访客的工作区由中间件在首次访问 / 时自动分配 (cookie). 这里
+    保留旧端点签名让前端 SPA 的登录表单仍能成功跳转, 任何输入都接受。
+    真正的隔离边界 = workspace cookie + 后端中间件 + 数据 scope。
+    """
+    label = (payload.username or "guest").strip()[:64]
+    return {"authenticated": True, "username": label}
 
 
 # 主页路由 - 服务 Vue 3 SPA
