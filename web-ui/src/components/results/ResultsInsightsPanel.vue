@@ -33,14 +33,7 @@ const latestSnapshotText = computed(() => {
   })
 })
 
-// 3 visible KPI on sticky bar (compact)
-const kpis = computed(() => [
-  { key: 'total', label: t('results.insights.totalLabel'), value: totalCount.value, accent: 'ink' as const },
-  { key: 'recommended', label: t('results.insights.recommendedLabel'), value: recommendedCountVal.value, accent: 'vermillion' as const },
-  { key: 'avg', label: t('results.insights.avgLabel'), value: avgPrice.value ? `¥${Number(avgPrice.value).toLocaleString()}` : '—', accent: 'ink' as const },
-])
-
-// Full stat blocks for the Dialog
+// Detail dialog content
 const currentStats = computed(() => {
   const m = props.insights?.market_summary
   return [
@@ -64,26 +57,33 @@ const historyStats = computed(() => {
 </script>
 
 <template>
-  <!-- KPI 簇: 在 sticky bar 内部内联渲染 -->
-  <div class="flex items-center gap-5">
-    <div
-      v-for="kpi in kpis"
-      :key="kpi.key"
-      class="flex items-baseline gap-1.5 whitespace-nowrap"
-    >
-      <span
-        class="text-lg font-extrabold tabular-nums tracking-tight"
-        :class="kpi.accent === 'vermillion' ? 'text-rose-600' : 'text-slate-900'"
-      >
-        {{ kpi.value }}
-      </span>
-      <span class="text-[10px] uppercase tracking-[0.18em] text-slate-400 font-bold">{{ kpi.label }}</span>
+  <!-- LEFT cluster (KPIs + 详细统计) — single row, never wraps -->
+  <div class="flex items-center gap-4 flex-shrink-0">
+    <!-- KPI 1 — Total -->
+    <div class="flex items-baseline gap-1 whitespace-nowrap">
+      <span class="text-base font-extrabold tabular-nums tracking-tight text-slate-900">{{ totalCount }}</span>
+      <span class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold">{{ t('results.insights.totalLabel') }}</span>
     </div>
 
+    <!-- KPI 2 — Recommended (vermillion accent) -->
+    <div class="flex items-baseline gap-1 whitespace-nowrap">
+      <span class="text-base font-extrabold tabular-nums tracking-tight text-rose-600">{{ recommendedCountVal }}</span>
+      <span class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold">{{ t('results.insights.recommendedLabel') }}</span>
+    </div>
+
+    <!-- KPI 3 — Avg price -->
+    <div class="flex items-baseline gap-1 whitespace-nowrap">
+      <span class="text-base font-extrabold tabular-nums tracking-tight text-slate-900">
+        {{ avgPrice ? `¥${Number(avgPrice).toLocaleString()}` : '—' }}
+      </span>
+      <span class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold">{{ t('results.insights.avgLabel') }}</span>
+    </div>
+
+    <!-- 详细统计 -->
     <button
       type="button"
       @click="open = true"
-      class="ml-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-rose-200 text-rose-600 hover:bg-rose-50 text-[11px] font-bold tracking-wide transition-colors"
+      class="inline-flex items-center gap-1 px-2 h-7 rounded-sm border border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 text-[11px] font-bold tracking-wide transition-colors flex-shrink-0"
       :title="t('results.insights.detailButton')"
     >
       <BarChart3 class="w-3.5 h-3.5" />
@@ -91,7 +91,7 @@ const historyStats = computed(() => {
     </button>
   </div>
 
-  <!-- 详细统计 Dialog: 走势 + 当前快照 + 历史快照 -->
+  <!-- 详细统计 Dialog -->
   <Dialog v-model:open="open">
     <DialogContent class="sm:max-w-[860px] max-h-[90vh] overflow-y-auto">
       <DialogHeader>
@@ -105,7 +105,6 @@ const historyStats = computed(() => {
         </DialogDescription>
       </DialogHeader>
 
-      <!-- Trend chart -->
       <section class="mt-2">
         <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-2">{{ t('results.insights.trendSection') }}</p>
         <div class="rounded-sm border border-slate-200 bg-slate-50/40 p-3">
@@ -113,7 +112,6 @@ const historyStats = computed(() => {
         </div>
       </section>
 
-      <!-- Current snapshot -->
       <section class="mt-5">
         <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-2">{{ t('results.insights.currentSection') }}</p>
         <div class="grid grid-cols-5 gap-2">
@@ -128,7 +126,6 @@ const historyStats = computed(() => {
         </div>
       </section>
 
-      <!-- History snapshot -->
       <section class="mt-4 mb-2">
         <p class="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold mb-2">{{ t('results.insights.historySection') }}</p>
         <div class="grid grid-cols-4 gap-2">

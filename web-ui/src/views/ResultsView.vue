@@ -140,17 +140,20 @@ async function handleSaveBlacklistRules() {
 
 <template>
   <div>
-    <!-- Sticky header: 3 KPI + filter bar combined (~56px) -->
+    <!-- Sticky header: single row, no wrap. h-12 (48px) -->
     <header class="sticky top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 mb-4 bg-white/85 backdrop-blur border-b border-slate-200">
-      <div class="flex items-center gap-4 flex-wrap h-14">
+      <div class="h-12 flex items-center gap-3 min-w-0">
+        <!-- LEFT: KPIs + 详细统计 -->
         <ResultsInsightsPanel
           :insights="insights"
           :selected-task-label="selectedTaskLabel"
           :recommended-count="recommendedCount"
         />
+
+        <!-- 全部展开/收起 -->
         <button
           type="button"
-          class="ml-1 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-slate-200 text-slate-600 hover:border-slate-900 hover:text-slate-900 text-[11px] font-bold tracking-wide transition-colors"
+          class="inline-flex items-center gap-1 px-2 h-7 rounded-sm border border-slate-200 text-slate-600 hover:border-slate-900 hover:text-slate-900 text-[11px] font-bold tracking-wide transition-colors flex-shrink-0"
           :title="expandAllAi ? t('results.controls.collapseAllAi') : t('results.controls.expandAllAi')"
           @click="toggleExpandAll"
         >
@@ -158,25 +161,27 @@ async function handleSaveBlacklistRules() {
           <ChevronsUpDown v-else class="w-3.5 h-3.5" />
           {{ expandAllAi ? t('results.controls.collapseAllAi') : t('results.controls.expandAllAi') }}
         </button>
-        <div class="h-6 w-px bg-slate-200"></div>
-        <div class="flex-1 min-w-0">
-          <ResultsFilterBar
-            :files="files"
-            :file-options="fileOptions"
-            :is-ready="isFileOptionsReady"
-            v-model:selectedFile="selectedFile"
-            v-model:aiRecommendedOnly="filters.ai_recommended_only"
-            v-model:keywordRecommendedOnly="filters.keyword_recommended_only"
-            v-model:includeHidden="filters.include_hidden"
-            v-model:sortBy="filters.sort_by"
-            v-model:sortOrder="filters.sort_order"
-            :is-loading="isLoading"
-            @refresh="refreshResults"
-            @manage-blacklist="openBlacklistDialog"
-            @export="handleExportResults"
-            @delete="openDeleteDialog"
-          />
-        </div>
+
+        <!-- Divider -->
+        <div class="h-5 w-px bg-slate-200 flex-shrink-0"></div>
+
+        <!-- MIDDLE+RIGHT: 任务 + 筛选 + 排序 + 操作 -->
+        <ResultsFilterBar
+          :files="files"
+          :file-options="fileOptions"
+          :is-ready="isFileOptionsReady"
+          v-model:selectedFile="selectedFile"
+          v-model:aiRecommendedOnly="filters.ai_recommended_only"
+          v-model:keywordRecommendedOnly="filters.keyword_recommended_only"
+          v-model:includeHidden="filters.include_hidden"
+          v-model:sortBy="filters.sort_by"
+          v-model:sortOrder="filters.sort_order"
+          :is-loading="isLoading"
+          @refresh="refreshResults"
+          @manage-blacklist="openBlacklistDialog"
+          @export="handleExportResults"
+          @delete="openDeleteDialog"
+        />
       </div>
     </header>
 
