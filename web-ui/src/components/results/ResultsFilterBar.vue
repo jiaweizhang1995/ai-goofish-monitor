@@ -95,7 +95,7 @@ function toggleSortOrder() {
       :model-value="props.selectedFile || undefined"
       @update:model-value="(value) => emit('update:selectedFile', value as string)"
     >
-      <SelectTrigger class="h-7 min-w-[140px] max-w-[180px] text-xs font-semibold border-slate-200 rounded-sm flex-shrink-0" :disabled="isSelectDisabled">
+      <SelectTrigger class="!w-[180px] h-7 text-xs font-semibold border-slate-200 rounded-sm flex-shrink-0" :disabled="isSelectDisabled">
         <span class="truncate">{{ selectedLabel }}</span>
       </SelectTrigger>
       <SelectContent>
@@ -110,7 +110,7 @@ function toggleSortOrder() {
       :model-value="filterMode"
       @update:model-value="(value) => setFilterMode(value as string)"
     >
-      <SelectTrigger class="h-7 min-w-[110px] text-xs font-semibold border-slate-200 rounded-sm flex-shrink-0">
+      <SelectTrigger class="!w-[120px] h-7 text-xs font-semibold border-slate-200 rounded-sm flex-shrink-0">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -137,7 +137,7 @@ function toggleSortOrder() {
       :model-value="props.sortBy"
       @update:model-value="(value) => emit('update:sortBy', value as any)"
     >
-      <SelectTrigger class="h-7 min-w-[105px] text-xs font-semibold border-slate-200 rounded-sm flex-shrink-0">
+      <SelectTrigger class="!w-[120px] h-7 text-xs font-semibold border-slate-200 rounded-sm flex-shrink-0">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
